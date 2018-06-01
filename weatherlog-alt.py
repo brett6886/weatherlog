@@ -1,35 +1,40 @@
 #!/usr/bin/python3
 
-#import MySQLdb as ms
-import mysql.connector as conn
-import sshtunnel
-
-
-#set max timeout
-sshtunnel.SSH_TIMEOUT = 5.0
-sshtunnel.TUNNEL_TIMEOUT = 5.0
+import MySQLdb as ms
+from sshtunnel import SSHTunnelForwarder
 
 
 #create ssh tunnel to cloud server
-with sshtunnel.SSHTunnelForwarder(
-    ("ssh.pythonanywhere.com"),
-    ssh_password = "XXXXXXXXXXXXXXXXX",
+print('connecting to cloud server...')
+with SSHTunnelForwarder(
+    "ssh.pythonanywhere.com",
+    ssh_password = "XXXXXXXXXXX",
     ssh_username = "iambrett",
     remote_bind_address=('iambrett.mysql.pythonanywhere-services.com', 3306)
-) as tunnel:
+) as server:
     #connect to cloud database
-    db = conn.connect(
+    print('connecting to cloud database...')
+    db = ms.connect(
         host = "127.0.0.1",
         user = "iambrett",
-        password = "weather1",
-        port = tunnel.local_bind_port,
-        db = "iambrett$weatherlog") 
+        passwd = "weather1",
+        port = server.local_bind_port,
+        db = "iambrett$weatherlog")
 
 
-#c = db.cursor()
-#headers = c.description
 
-#for header in headers:
-#    print(header)
- 
+#create cursor object
+print('Creating cursor object...')
+c = db.cursor()
+
+
+#run mysql commands
+print('Executing MySQL commands...')
+c.execute("""use iambrett$weatherlog""")
+str1 = c.execute("""DESCRIBE weatherVars""")
+
+
+#close cursor and database
+print('Closing cursor and database...')
+c.close()
 db.close()
