@@ -4,6 +4,8 @@
 import mysql.connector as conn
 import sshtunnel
 import datetime
+import smbus2
+import bme280
 
 
 #set max timeout
@@ -29,18 +31,51 @@ with sshtunnel.SSHTunnelForwarder(
         database = "iambrett$weatherlog") 
 
 
-    today = "{}/{}/{}".format(now.month,now.day,now.year)
-    currenttime  = "{}:{}:{}".format(now.hour,now.minute,now.second)
+
+    #define date/time variables
+    print("defining date and time variables...")
+    now = datetime.datetime.now()
+    today = str(now.date())
+    currenttime  = "{:02d}:{:02d}:{:02d}".format(now.hour,now.minute,now.second)
 
     
     
+        #read data from sensor
+    print("reading data from sensor...")
+    port = 1
+    address = 0x77
+    bus = smbus2.SMBus(port)
+    calibration_params = bme280.load_calibration_params(bus, address)
+    data = bme280.sample(bus, address, calibration_params)
 
-    #test connection by printing table information
-    print("\nTable information")
-    c = db.cursor()
-    c.execute("DESCRIBE weatherVars;")
-    for i in c.fetchall():
-        print(i)
+
+    #define the new variables to be sent to database
+    newWeatherVars = (today, currenttime, str(data.humidity), str(data.temperature), str(data.pressure))
+
+
+    #write data to database
+    c1 = db.cursor()
+    print("defining query 1...")
+    query1 = ("INSERT INTO weatherVars "
+             "(date, time, humidity, temp, pressure) "
+             "VALUES (%s, %s, %s, %s, %s)")
+    print("executing query 1...")
+    c1.execute(query1, newWeatherVars)
+    print("closing cursor 1")
+    c1.close()
+
+
+    #read data from database (use for debugging)
+##    c2 = db.cursor()
+##    print("defining query2...")
+##    query2 = ("SELECT * FROM weatherVars;")
+##    print("executing query 2...")
+##    c2.execute(query2)
+##    print("\nprinting table...")
+##    for i in c2:
+##        print(i)
+##    c2.close()
+
 
 
     #close cursor object and database connection
