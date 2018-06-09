@@ -3,6 +3,7 @@
 #import MySQLdb as ms
 import mysql.connector as conn
 import sshtunnel
+import datetime
 
 
 #set max timeout
@@ -27,6 +28,12 @@ with sshtunnel.SSHTunnelForwarder(
         port = tunnel.local_bind_port,
         database = "iambrett$weatherlog") 
 
+
+    today = "{}/{}/{}".format(now.month,now.day,now.year)
+    currenttime  = "{}:{}:{}".format(now.hour,now.minute,now.second)
+
+    
+    
 
     #test connection by printing table information
     print("\nTable information")
